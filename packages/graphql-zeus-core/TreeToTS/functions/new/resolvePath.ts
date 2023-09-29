@@ -132,6 +132,18 @@ export const InternalArgsBuilt = ({
       }
     }
     const checkType = ResolveFromPath(props, returns, ops)(p);
+    if (Array.isArray(a)) {
+      const elementType = ResolveFromPath(props, returns, ops)(p);
+      if (elementType.startsWith('scalar.')) {
+        const scalarKey = elementType.split('.').slice(1).join('.');
+        if (a.length === 0) {
+          return `[]`;
+        }
+        return `[${a.map((arr) => (scalars?.[scalarKey]?.encode?.(arr) as string) || JSON.stringify(arr)).join(', ')}]`;
+      }
+      return `[${a.map((arr) => arb(arr, p, false)).join(', ')}]`;
+    }
+
     if (checkType.startsWith('scalar.')) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [_, ...splittedScalar] = checkType.split('.');
@@ -140,6 +152,9 @@ export const InternalArgsBuilt = ({
     }
     if (Array.isArray(a)) {
       return `[${a.map((arr) => arb(arr, p, false)).join(', ')}]`;
+    }
+    if (a === undefined) {
+      return 'ids: null';
     }
     if (typeof a === 'string') {
       if (checkType === 'enum') {
